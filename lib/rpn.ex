@@ -1,40 +1,44 @@
 defmodule Rpn do
+  @moduledoc """
+  This module is a Reverse Polish Notation Calculator
+  https://en.wikipedia.org/wiki/Reverse_Polish_notation
+  """
+
   def start do
-    {:ok, spawn(__MODULE__, :loop, [[]])}
-  end
-
-  def loop(stack) do
-    receive do
-      {from, ref, :peek} ->
-        send(from, {ref, stack})
-        loop(stack)
-
-      {:push, :+} ->
-        [ second | [ first | rest ] ] = stack
-        loop([(first + second) | rest])
-
-      {:push, :-} ->
-        [ second | [ first | rest ] ] = stack
-        loop([(first - second) | rest])
-
-      {:push, :x} ->
-        [ second | [ first | rest ] ] = stack
-        loop([(first * second) | rest])
-
-      {:push, val} ->
-        loop([val | stack])
-    end
+    Agent.start(fn -> [] end)
   end
 
   def peek(pid) do
-    ref = make_ref()
-    send(pid, {self(), ref, :peek})
-    receive do
-      {^ref, stack} -> stack
-    end
+    Agent.get(pid, &calculate/1)
   end
 
   def push(pid, val) do
-    send(pid, {:push, val})
+    Agent.update(pid, fn(current) -> current ++ [val] end)
   end
+
+  defp calculate(stack) do
+    stack
+    |> Enum.reduce([], fn(val, acc) ->
+      case val do
+        :+ ->
+          do_operation(acc, &(&1 + &2))
+        :- ->
+          do_operation(acc, &(&2 - &1))
+        :x ->
+          do_operation(acc, &(&1 * &2))
+        _ ->
+          [val | acc]
+      end
+    end)
+  end
+
+  defp do_operation(list, fun) do
+    [x | tail] = list
+    [y | remaining] = tail
+    new_val = fun.(x, y)
+    [new_val | remaining]
+  end
+
+
 end
+
