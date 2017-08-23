@@ -1,4 +1,4 @@
-# Rpn
+# Rpn [![Build Status](https://travis-ci.org/sneako/rpn.svg?branch=master)](https://travis-ci.org/sneako/rpn)
 
 **TODO: Add description**
 
